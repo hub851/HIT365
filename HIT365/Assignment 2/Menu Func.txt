@@ -1,0 +1,25 @@
+#include <stdio.h>
+
+void printMenu() {
+    printf("MENU\n");
+    printf("----\n");
+    printf("EXIT         Exits this program.\n");
+    printf("HELP         Displays information about this program.\n");
+    printf("MEMORY       As part of a mathematical expression, the term MEMORY \n             is substituted by the value stored in memory. Otherwise, \n             the value stored in memory is displayed on-screen.\n");
+    printf("RESET        Erases stored memory and returns calculator to its \n             initial 'start-up' mode.\n");
+    printf("STORE        Saves the current answer to memory.\n");
+    printf("\n");
+    printf("OPERATOR     DESCRIPTION          SYNTAX\n");
+    printf("+            addition             [a + b!+a]\n");
+    printf("-            subtraction          [a - b!-a]\n");
+    printf("*            multiplication       [a * b!*a]\n");
+    printf("/            division             [a / b!/a]\n");
+    printf("^            sqr(x)               a^\n");
+    printf("#            sqrt(x)              a#\n");
+}
+
+int main() {
+    printMenu();
+
+    return 0;
+}

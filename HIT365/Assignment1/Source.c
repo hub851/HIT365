@@ -1,0 +1,119 @@
+#include <stdio.h>
+// Works with employee codes and show sum of salaries and total number of employees
+
+
+// Function to calculate the pay for managers
+float calculate_manager_pay() {
+    float weekly_salary;
+    printf("Enter the weekly salary for the manager: ");
+    scanf_s("%f", &weekly_salary);
+    return weekly_salary;
+}
+
+// Function to calculate the pay for hourly workers
+float calculate_hourly_pay() {
+    float hourly_wage, hours_worked, overtime_pay;
+    printf("Enter the hourly wage for the hourly worker: ");
+    scanf_s("%f", &hourly_wage);
+    printf("Enter the number of hours worked by the hourly worker: ");
+    scanf_s("%f", &hours_worked);
+    if (hours_worked <= 40) {
+        return hourly_wage * hours_worked;
+    }
+    else {
+        overtime_pay = (hours_worked - 40) * 1.5 * hourly_wage;
+        return (hourly_wage * 40) + overtime_pay;
+    }
+}
+
+// Function to calculate the pay for commission workers
+float calculate_commission_pay() {
+    float sales_item_a, sales_item_b, sales_item_c, commission_rate_a, commission_rate_b, commission_rate_c;
+    printf("Enter the gross weekly sales for Item A: ");
+    scanf_s("%f", &sales_item_a);
+    printf("Enter the gross weekly sales for Item B: ");
+    scanf_s("%f", &sales_item_b);
+    printf("Enter the gross weekly sales for Item C: ");
+    scanf_s("%f", &sales_item_c);
+    commission_rate_a = 0.057;
+    commission_rate_b = 0.064;
+    commission_rate_c = 0.072;
+    return 250 + (sales_item_a * commission_rate_a) + (sales_item_b * commission_rate_b) + (sales_item_c * commission_rate_c);
+}
+
+// Function to calculate the pay for pieceworkers
+float calculate_pieceworker_pay() {
+    float item1_pay, item2_pay, item3_pay, total_pay;
+    int item1_qty, item2_qty, item3_qty;
+    printf("Enter the number of Item 1 produced by the pieceworker: ");
+    scanf_s("%d", &item1_qty);
+    printf("Enter the number of Item 2 produced by the pieceworker: ");
+    scanf_s("%d", &item2_qty);
+    printf("Enter the number of Item 3 produced by the pieceworker: ");
+    scanf_s("%d", &item3_qty);
+    item1_pay = 22.5 * item1_qty;
+    item2_pay = 24.5 * item2_qty;
+    item3_pay = 26.0 * item3_qty;
+    total_pay = item1_pay + item2_pay + item3_pay;
+    return total_pay;
+}
+
+int main() {
+    int pay_code, employee_count = 0, manager_count = 0, hourly_count = 0, commission_count = 0, piecework_count = 0;
+    double total_pay = 0, employee_pay, manager_pay, hourly_pay, commission_pay, piecework_pay;
+    double total_manager_pay = 0.0, total_hourly_pay = 0.0, total_commission_pay = 0.0, total_piecework_pay = 0.0;
+    char continueInput = 'y';
+
+    while (continueInput == 'y') { // This loop will continue when 'y' is input
+        ++employee_count;
+        printf("Enter the pay code for the employee (1, 2, 3, 4): ");
+        scanf_s("%d", &pay_code);
+
+        switch (pay_code) {
+        case 1:
+            manager_pay = calculate_manager_pay();
+            employee_pay = manager_pay;
+            total_manager_pay += manager_pay;
+            ++manager_count;
+            break;
+        case 2:
+            hourly_pay = calculate_hourly_pay();
+            employee_pay = hourly_pay;
+            total_hourly_pay += hourly_pay;
+            ++hourly_count;
+            break;
+        case 3:
+            commission_pay = calculate_commission_pay();
+            employee_pay = commission_pay;
+            total_commission_pay += commission_pay;
+            ++commission_count;
+            break;
+        case 4:
+            piecework_pay = calculate_pieceworker_pay();
+            employee_pay = piecework_pay;
+            total_piecework_pay += piecework_pay;
+            ++piecework_count;
+            break;
+        default:
+            printf("Invalid pay code. Please enter a valid pay code.\n");
+            continue; // If an invalid pay code is entered, continue the loop
+        }
+
+        total_pay += employee_pay;
+        printf("The weekly pay for this employee is: $%.2f\n", employee_pay);
+
+        printf("To add another payment enter 'y' or enter any other key:  ");
+        scanf_s(" %c", &continueInput);
+
+
+    }
+    printf("Total pay for %d Managers: $%.2f\n", manager_count, total_manager_pay);
+    printf("Total pay for %d Hourly Workers: $%.2f\n", hourly_count, total_hourly_pay);
+    printf("Total pay for %d Commission Workers: $%.2f\n", commission_count, total_commission_pay);
+    printf("Total pay for %d Pieceworkers: $%.2f\n", piecework_count, total_piecework_pay);
+    printf("Total pay for %d employees: $%.2f\n", employee_count, total_pay);
+
+
+    printf("\n"); // Add a newline for spacing
+    return 0;
+}

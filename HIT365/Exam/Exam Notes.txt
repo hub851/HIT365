@@ -1,0 +1,176 @@
+Write a C program that takes an arithmetic operator +, -, *, / and two operands from the user and performs the calculation on the two operands depending upon the operator entered by the user, using switch and break statements.
+
+#include <stdio.h>
+
+int main() {
+    char operator;
+    double operand1, operand2, result;
+
+    printf("Enter an arithmetic operator (+, -, *, /): ");
+    scanf_s(" %c", &operator);
+
+    printf("Enter two operands: ");
+    scanf_s("%lf %lf", &operand1, &operand2);
+
+    switch (operator) {
+    case '+':
+        result = operand1 + operand2;
+        printf("%.2lf + %.2lf = %.2lf\n", operand1, operand2, result);
+        break;
+    case '-':
+        result = operand1 - operand2;
+        printf("%.2lf - %.2lf = %.2lf\n", operand1, operand2, result);
+        break;
+    case '*':
+        result = operand1 * operand2;
+        printf("%.2lf * %.2lf = %.2lf\n", operand1, operand2, result);
+        break;
+    case '/':
+        if (operand2 != 0) {
+            result = operand1 / operand2;
+            printf("%.2lf / %.2lf = %.2lf\n", operand1, operand2, result);
+        }
+        else {
+            printf("Error: Division by zero is not allowed.\n");
+        }
+        break;
+    default:
+        printf("Error: Invalid operator.\n");
+        break;
+    }
+
+    return 0;
+}
+
+
+Write a C program to add numbers until user enters zero, using a do … while loop
+
+#include <stdio.h>
+
+int main() {
+    int number;
+    int sum = 0;
+
+    do {
+        printf("Enter a number (enter 0 to exit): ");
+        scanf_s("%d", &number);
+        sum += number;
+    } while (number != 0);
+
+    printf("Sum = %d\n", sum);
+
+    return 0;
+}
+
+What will the output be when you execute the following C code? Prints 10
+#include<stdio.h>
+int main(){
+const int *p;
+int a=10;
+p=&a;
+printf("%d",*p); 
+return 0;
+}
+
+Write a C program that asks user to enter a string and a character and checks how many times the character is repeated in the string.
+
+#include <stdio.h>
+
+int main() {
+    char string[100];
+    char character;
+    int count = 0;
+    int i;
+
+    printf("Enter a string: ");
+    scanf("%s", string);
+
+    printf("Enter a character: ");
+    scanf(" %c", &character);
+
+    for (i = 0; string[i] != '\0'; i++) {
+        if (string[i] == character) {
+            count++;
+        }
+    }
+
+    printf("The character '%c' appears %d times in the string.\n", character, count);
+
+    return 0;
+}
+
+Write a program that takes three integers entered by a user and stores them in variable a, b and c respectively. Then, these variables are passed to a function using pass by reference. This function swaps the value of these elements in cyclic order. The program prints the output on the screen. Below is the sample output of the program:
+
+#include <stdio.h>
+
+void cyclicSwap(int *a, int *b, int *c) {
+    int temp = *c;
+    *c = *b;
+    *b = *a;
+    *a = temp;
+}
+
+int main() {
+    int a, b, c;
+
+    printf("Enter three integers: ");
+    scanf("%d %d %d", &a, &b, &c);
+
+    printf("Before swapping: a = %d, b = %d, c = %d\n", a, b, c);
+
+    cyclicSwap(&a, &b, &c);
+
+    printf("After swapping: a = %d, b = %d, c = %d\n", a, b, c);
+
+    return 0;
+}
+
+
+Write a C program to calculate the power of a number using recursion.
+
+#include <stdio.h>
+
+double power(double base, int exponent);
+
+int main() {
+    double base;
+    int exponent;
+    double result;
+
+    printf("Enter the base number: ");
+    scanf("%lf", &base);
+
+    printf("Enter the exponent: ");
+    scanf("%d", &exponent);
+
+    result = power(base, exponent);
+
+    printf("Result: %.2lf\n", result);
+
+    return 0;
+}
+
+double power(double base, int exponent) {
+    if (exponent == 0) {
+        return 1;
+    } else if (exponent > 0) {
+        return base * power(base, exponent - 1);
+    } else {
+        return (1 / base) * power(base, exponent + 1);
+    }
+}
+
+
+Assume that integer array b[5] and integer pointer variable bPtr have been defined. Write a statement to set bPtr equal to the address of the first element in array b. Write a statement using pointer expression to reference the array element b[3].
+
+To set bPtr equal to the address of the first element in array b, you can use the following statement:
+
+bPtr = &b[0];
+This assigns the address of the first element in array b to the pointer variable bPtr. The & operator is used to obtain the address of b[0].
+
+To reference the array element b[3] using pointer expression, you can use the following statement:
+
+*(bPtr + 3)
+Here, bPtr + 3 increments the pointer bPtr by 3 elements, effectively pointing to the fourth element b[3] in the array b. The * operator is then used to dereference the pointer and access the value stored at that memory location.
+
+Note: Ensure that the array b has been properly initialized and contains at least four elements (b[0] to b[3]) before using these statements.

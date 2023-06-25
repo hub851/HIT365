@@ -1,0 +1,666 @@
+#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+#include <string.h>
+
+#ifndef LINE_MAX
+#define LINE_BUFFER 2048
+#else
+#define LINE_BUFFER LINE_MAX
+#endif
+
+typedef enum token_type {
+    EMPTY,
+    VARIABLE,
+    R_BRACKET,
+    END_TERM,
+    L_BRACKET,
+    OPERATOR,
+    MINUS,
+    ADD,
+    DIVIDE,
+    MULTIPLY,
+    UNARY,
+    SQR,
+    SQRT
+} token_type;
+
+const int precedence[] = { 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 3, 3 };
+
+typedef struct token {
+    token_type type;
+    double value;
+} token;
+
+
+typedef struct linked_list {
+    token t;
+    bool isfull;
+    struct linked_list* next;
+} linked_list;
+
+
+token add_token(linked_list* header, token t);
+linked_list* convert_rpn(const linked_list* const var_list);
+void display_help(void);
+double* eval_rtn(const linked_list* const rtn_var);
+void list_link(linked_list* thelist);
+int main(void);
+linked_list* new_list(void);
+token* pop_head(linked_list* header);
+void print_linked_list(const linked_list* const header);
+bool process_expression(char expression[], const double* const last_a,
+    const double* const memory,
+    double* const answer);
+linked_list* queue(linked_list* header, token t);
+char* strip(const char* str);
+linked_list* var_convert(char exp[], const double* const last_a,
+    const double* const memory);
+linked_list* push(linked_list* header, token t);
+
+
+int main(void) {
+
+    printf("Type \"HELP\" or enter a mathematical expression\n");
+
+
+    char line[LINE_BUFFER];
+    char* cmd = NULL;
+    double* memory = NULL;
+    double* last_a = NULL;
+    double answer = 0;
+    bool calc_success = true;
+    unsigned int decimals = 0;
+
+    while (true) {
+
+        decimals = 6;
+
+        printf("Calc:\\> ");
+        if (!fgets(line, LINE_BUFFER, stdin)) {
+            printf("");
+            break;
+        }
+        cmd = strip(line);
+
+        for (size_t i = 0; i < strlen(cmd); ++i) {
+            cmd[i] = tolower(cmd[i]);
+        }
+
+        if (*cmd == '\0') {
+
+        }
+        else if (strcmp(cmd, "help") == 0) {
+            display_help();
+
+        }
+        else if (strcmp(cmd, "exit") == 0) {
+            break;
+
+        }
+        else if (strcmp(cmd, "memory") == 0) {
+            if (memory != NULL) {
+                if (*memory == floor(*memory)) {
+                    decimals = 0;
+                }
+                printf("memory = %.*f\n", decimals, *memory);
+            }
+            else {
+                printf("Memory is empty\n");
+            }
+
+        }
+        else if (strcmp(cmd, "Answer:\\>") == 0) {
+            if (last_a != NULL) {
+                if (*last_a == floor(*last_a)) {
+                    decimals = 0;
+                }
+                printf("Answer:\\> = %.*f\n", decimals, *last_a);
+            }
+            else {
+                printf("No previous calculations\n");
+            }
+
+        }
+        else if (strcmp(cmd, "store") == 0) {
+            if (last_a == NULL) {
+                printf("No answer to STORE\n");
+            }
+            else {
+                if (memory == NULL) {
+                    memory = malloc(sizeof(double));
+                }
+                *memory = *last_a;
+                if (*memory == floor(*memory)) {
+                    decimals = 0;
+                }
+                printf("ANSWER STORED in MEMORY\n", decimals, *memory);
+            }
+
+        }
+        else if (strcmp(cmd, "reset") == 0) {
+            free(memory); memory = NULL;
+            last_a = NULL;
+            printf("Reset\n");
+
+        }
+        else {
+            calc_success = process_expression(cmd, last_a, memory, &answer);
+            if (calc_success) {
+                last_a = &answer;
+                if (answer == floor(answer)) {
+                    decimals = 0;
+                }
+                printf("Answer:\\> = %.*f\n", decimals, answer);
+            }
+        }
+
+        free(cmd);
+        printf("");
+    }
+    return 0;
+}
+
+bool process_expression(char expression[], const double* const last_a,
+    const double* const memory, double* const answer) {
+    linked_list* header = var_convert(expression, last_a, memory);
+    if (header == NULL) {
+        return false;
+    }
+
+    linked_list* rtn_var = convert_rpn(header);
+    list_link(header);
+    if (rtn_var == NULL) {
+        return false;
+    }
+
+    double* returned_answer = eval_rtn(rtn_var);
+    list_link(rtn_var);
+    if (returned_answer == NULL) {
+        return false;
+    }
+
+    *answer = *returned_answer;
+    free(returned_answer);
+    return true;
+}
+
+linked_list* convert_rpn(const linked_list* const var_list) {
+
+    linked_list* output_queue = new_list();
+    linked_list* op_stack = new_list();
+
+    const linked_list* curr_token = var_list;
+    token* temptoken = NULL;
+    token_type last_type = EMPTY;
+    bool first = true;
+
+    while (true) {
+        if (curr_token->t.type >= OPERATOR) {
+            if (curr_token->t.type >= UNARY &&
+                ((last_type > END_TERM && last_type < UNARY) || first)) {
+                printf("Missing number\n");
+                list_link(output_queue); list_link(op_stack);
+                return NULL;
+            }
+            while (op_stack->isfull) {
+                if (precedence[curr_token->t.type]
+                    <= precedence[op_stack->t.type]) {
+                    temptoken = pop_head(op_stack);
+                    queue(output_queue, *temptoken);
+                    free(temptoken);
+                }
+                else {
+                    break;
+                }
+            }
+            last_type = curr_token->t.type;
+            push(op_stack, curr_token->t);
+
+        }
+        else if (curr_token->t.type == L_BRACKET) {
+            push(op_stack, curr_token->t);
+            last_type = L_BRACKET;
+
+        }
+        else if (curr_token->t.type == R_BRACKET) {
+            while (true) {
+                temptoken = pop_head(op_stack);
+                if (temptoken == NULL) {
+                    printf("Invalid Entry\n");
+                    return NULL;
+                }
+                else if (temptoken->type == L_BRACKET) {
+                    free(temptoken);
+                    if (last_type == L_BRACKET) {
+                        printf("Empty brackets\n");
+                        return NULL;
+                    }
+                    break;
+                }
+                else {
+                    queue(output_queue, *temptoken);
+                    free(temptoken);
+                    last_type = OPERATOR;
+                }
+            }
+            last_type = R_BRACKET;
+
+        }
+        else {
+            if (last_type <= END_TERM && !first) {
+                printf("Missing operator\n");
+                list_link(output_queue); list_link(op_stack);
+                return NULL;
+            }
+            queue(output_queue, curr_token->t);
+            last_type = VARIABLE;
+        }
+
+
+        if (curr_token->next == NULL) {
+            token* t = NULL;
+            t = pop_head(op_stack);
+            while (t != NULL) {
+                if ((*t).type == L_BRACKET || (*t).type == R_BRACKET) {
+                    printf("Invalid Entry\n");
+                    free(t);
+                    list_link(output_queue); list_link(op_stack);
+                    return NULL;
+                }
+                queue(output_queue, *t);
+                free(t);
+                t = pop_head(op_stack);
+            }
+            break;
+        }
+        else {
+            curr_token = curr_token->next;
+            if (first) {
+                first = false;
+            }
+        }
+    }
+
+    list_link(op_stack);
+    return output_queue;
+}
+
+
+linked_list* var_convert(char exp[], const double* const last_a,
+    const double* const memory) {
+
+    linked_list* header = new_list();
+    bool first = true;
+    token previous = { EMPTY, 0 };
+    token temp_var = { EMPTY, 0 };
+
+    if (last_a != NULL) {
+        switch (exp[0]) {
+        case '-':
+        case '+':
+        case '*':
+        case '/':
+        case '^':
+        case '#':
+            temp_var.type = VARIABLE;
+            temp_var.value = *last_a;
+            previous = add_token(header, temp_var);
+            first = false;
+            break;
+        }
+    }
+
+    size_t i = 0;
+    size_t len = strlen(exp);
+    bool grab_number = false;
+
+    while (i < len) {
+        temp_var.value = 0;
+        switch (exp[i]) {
+        case ' ':
+            break;
+        case '+':
+            if (!first && (previous.type < END_TERM || previous.type > UNARY)) {
+                temp_var.type = ADD;
+                previous = add_token(header, temp_var);
+            }
+            else {
+                grab_number = true;
+            }
+            break;
+        case '-':
+            if (!first && (previous.type < END_TERM || previous.type > UNARY)) {
+                temp_var.type = MINUS;
+                previous = add_token(header, temp_var);
+            }
+            else {
+                grab_number = true;
+            }
+            break;
+        case '*':
+            temp_var.type = MULTIPLY;
+            previous = add_token(header, temp_var);
+            break;
+        case '/':
+            temp_var.type = DIVIDE;
+            previous = add_token(header, temp_var);
+            break;
+        case '^':
+            temp_var.type = SQR;
+            previous = add_token(header, temp_var);
+            break;
+        case '#':
+            temp_var.type = SQRT;
+            previous = add_token(header, temp_var);
+            break;
+        case '(':
+            temp_var.type = L_BRACKET;
+            previous = add_token(header, temp_var);
+            break;
+        case ')':
+            temp_var.type = R_BRACKET;
+            previous = add_token(header, temp_var);
+            break;
+        default:
+            if (isalpha(exp[i])) {
+                if (strlen(&exp[i]) >= 6 && strncmp("memory", &exp[i], 6) == 0) {
+                    if (memory == NULL) {
+                        printf("MEMORY is empty\n");
+                        list_link(header);
+                        return NULL;
+                    }
+                    temp_var.type = VARIABLE;
+                    temp_var.value = *memory;
+                    previous = add_token(header, temp_var);
+                    i = i + 5;
+                }
+                else {
+                    printf("Invalid Entry\n");
+                    list_link(header);
+                    return NULL;
+                }
+
+            }
+            else if (isdigit(exp[i]) || (exp[i] == '.' && isdigit(exp[i + 1]))) {
+                grab_number = true;
+            }
+            else {
+                printf("Invalid Entry\n");
+                list_link(header);
+                return NULL;
+            }
+            break;
+        }
+        if (grab_number) {
+            grab_number = false;
+            double value = 0;
+            int l = 0;
+            if (sscanf_s(&exp[i], "%lf%n", &value, &l) != 1) {
+                printf("Invalid entry\n");
+                list_link(header);
+                return NULL;
+            }
+            temp_var.type = VARIABLE;
+            temp_var.value = value;
+            previous = add_token(header, temp_var);
+            i = i + (l - 1);
+        }
+
+        ++i;
+        first = false;
+    }
+
+    return header;
+}
+
+double* eval_rtn(const linked_list* const rtn_var) {
+
+    token* left = NULL;
+    token* right = NULL;
+    double temp_answer = 0;
+    linked_list* answer_stack = new_list();
+    const linked_list* curr_token = rtn_var;
+    token_type type = EMPTY;
+    token temp_var = { VARIABLE, 0 };
+
+    while (true) {
+        type = curr_token->t.type;
+
+        if (type >= OPERATOR) {
+            right = pop_head(answer_stack);
+            if (right == NULL) {
+                printf("Missing number\n");
+                list_link(answer_stack);
+                return NULL;
+            }
+            if (type < UNARY) {
+                left = pop_head(answer_stack);
+                if (left == NULL) {
+                    printf("Missing number\n");
+                    free(right); list_link(answer_stack);
+                    return NULL;
+                }
+            }
+
+            switch (type) {
+            case ADD:
+                temp_answer = left->value + right->value;
+                break;
+            case MINUS:
+                temp_answer = left->value - right->value;
+                break;
+            case MULTIPLY:
+                temp_answer = left->value * right->value;
+                break;
+            case DIVIDE:
+                if (right->value == 0) {
+                    printf("Invalid Entry\n");
+                    free(right); free(left); list_link(answer_stack);
+                    return NULL;
+                }
+                temp_answer = left->value / right->value;
+                break;
+            case SQR:
+                temp_answer = pow(right->value, 2);
+                break;
+            case SQRT:
+                if (right->value < 0) {
+                    printf("Invalid Entry\n");
+                    free(right); free(left); list_link(answer_stack);
+                    return NULL;
+                }
+                temp_answer = sqrt(right->value);
+                break;
+            default:
+                printf("Invalid Entry\n");
+                free(right); free(left); list_link(answer_stack);
+                return NULL;
+            }
+
+            free(left); free(right);
+            left = NULL; right = NULL;
+
+            temp_var.value = temp_answer;
+            push(answer_stack, temp_var);
+
+        }
+        else {
+            push(answer_stack, curr_token->t);
+        }
+
+        if (curr_token->next == NULL) {
+            break;
+        }
+        else {
+            curr_token = curr_token->next;
+        }
+    }
+
+    token* final = pop_head(answer_stack);
+
+    if (final == NULL || answer_stack->next != NULL || answer_stack->isfull) {
+        printf("Invalid Entry\n");
+        free(final); list_link(answer_stack);
+        return NULL;
+    }
+
+    double* answer = malloc(sizeof(double));;
+    *answer = final->value;
+    free(final); list_link(answer_stack);
+    return answer;
+}
+
+linked_list* push(linked_list* header, token t) {
+    if (!header->isfull) {
+        header->next = NULL;
+    }
+    else {
+        linked_list* new_next = malloc(sizeof(linked_list));
+        new_next->next = header->next;
+        new_next->t = header->t;
+        new_next->isfull = header->isfull;
+
+        header->next = new_next;
+    }
+
+    header->t = t;
+    header->isfull = true;
+    return header;
+}
+
+linked_list* queue(linked_list* header, token t) {
+    if (!header->isfull) {
+        header->t = t;
+        header->isfull = true;
+        header->next = NULL;
+        return header;
+    }
+    linked_list* curr_token = header;
+    while (true) {
+        if (curr_token->next == NULL) {
+            curr_token->next = malloc(sizeof(linked_list));
+            curr_token->next->isfull = true;
+            curr_token->next->next = NULL;
+            curr_token->next->t = t;
+            break;
+        }
+        else {
+            curr_token = curr_token->next;
+        }
+    }
+    return header;
+}
+
+token* pop_head(linked_list* header) {
+    if (header->isfull) {
+        token* t = malloc(sizeof(token));
+        *t = header->t;
+        if (header->next != NULL) {
+            linked_list* temp = header->next;
+            header->isfull = header->next->isfull;
+            header->t = header->next->t;
+            header->next = header->next->next;
+            free(temp);
+        }
+        else {
+            header->isfull = false;
+        }
+        return t;
+    }
+    else {
+        return NULL;
+    }
+}
+
+token add_token(linked_list* header, token t) {
+    queue(header, t);
+    return t;
+}
+
+linked_list* new_list(void) {
+    linked_list* l = malloc(sizeof(linked_list));
+    l->isfull = false;
+    l->next = NULL;
+    l->t.type = EMPTY;
+    l->t.value = 0;
+    return l;
+}
+
+void list_link(linked_list* thelist) {
+    linked_list* next = thelist;
+    linked_list* temp = NULL;
+    while (next != NULL) {
+        temp = next;
+        next = next->next;
+        free(temp);
+    }
+}
+
+char* strip(const char* s) {
+    char* out;
+
+    while (isspace(*s)) {
+        ++s;
+    }
+
+    if (*s == 0) {
+        out = malloc(sizeof(char));
+        *out = '\0';
+        return out;
+    }
+
+    const char* end = s + strlen(s) - 1;
+    while (isspace(*end)) {
+        --end;
+    }
+
+    size_t len = (end + 2) - s;
+    out = malloc(len * sizeof(char));
+    memcpy(out, s, len);
+    out[len - 1] = 0;
+    return out;
+}
+
+void print_linked_list(const linked_list* const header) {
+    const linked_list* curr_token = header;
+    printf("[\n");
+    while (true) {
+        if (curr_token->t.type >= OPERATOR) {
+            printf("op %d", curr_token->t.type);
+        }
+        else {
+            printf("val %.6f", curr_token->t.value);
+        }
+
+        if (curr_token->next == NULL) {
+            printf("]\n");
+            break;
+        }
+        else {
+            printf(", ");
+            curr_token = curr_token->next;
+        }
+    }
+}
+
+void display_help(void) {
+    printf("\n"
+        "EXIT          Exits this program.\n"
+        "HELP          Displays information about this program.\n"
+        "MEMORY        As part of a mathematical expression, the term MEMORY\n"
+        "              is substituted by the value stored in memory. Otherwise,\n"
+        "              the value stored in memory is displayed on-screen.\n"
+        "RESET         Erases stored memory and returns calculator to its\n"
+        "              initial 'start-up' mode.\n"
+        "STORE         Saves the current answer to memory.\n"
+        "\n"
+        "OPERATOR      DESCRIPTION       SYNTAX\n"
+        "+             addition          [a + b!+a\n"
+        "-             subtraction       [a - b!-a]\n"
+        "*             multiplication    [a * b!*a]\n"
+        "/             division          [a / b!/a]\n"
+        "^             sqr(x)            a^ \n"
+        "#             sqrt(x)           a# \n\n"
+        "Example:      a^ +b#/ MEMORY (spacing optional)\n\n");
+}

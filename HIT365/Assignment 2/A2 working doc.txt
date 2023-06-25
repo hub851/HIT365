@@ -1,0 +1,18 @@
+#include <stdio.h>
+
+int main() {
+    int num1, num2;
+    char operator;
+
+    printf("Enter an addition equation (e.g., 5+3): ");
+    scanf("%d%c%d", &num1, &operator, &num2);
+
+    if (operator == '+') {
+        int sum = num1 + num2;
+        printf("Result: %d\n", sum);
+    } else {
+        printf("Invalid operator!\n");
+    }
+
+    return 0;
+}
